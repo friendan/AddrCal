@@ -1,0 +1,90 @@
+import fonts.fontAwesome;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="设置";right=984;bottom=589;bgcolor=16777215)
+winform.add(
+IDABaseAddr={cls="edit";left=125;top=61;right=326;bottom=98;edge=1;multiline=1;z=3};
+IDAFunAddr={cls="edit";left=125;top=151;right=325;bottom=190;edge=1;multiline=1;z=8};
+ODBaseAddr={cls="edit";left=371;top=60;right=572;bottom=97;edge=1;multiline=1;z=4};
+ODFunAddr={cls="edit";left=372;top=150;right=572;bottom=189;edge=1;multiline=1;z=10};
+btnCal={cls="plus";text='\uF0C7  计算偏移';left=607;top=68;right=744;bottom=106;bgcolor=11580047;db=1;dr=1;font=LOGFONT(h=-16;name='FontAwesome');notify=1;tabstop=1;z=2};
+btnClear={cls="plus";text='\uF0C7  清空记录';left=645;top=132;right=782;bottom=170;bgcolor=11580047;db=1;dr=1;font=LOGFONT(h=-16;name='FontAwesome');notify=1;tabstop=1;z=12};
+hisRecord={cls="edit";left=28;top=208;right=968;bottom=563;edge=1;hscroll=1;multiline=1;vscroll=1;z=11};
+lbTip={cls="static";left=63;top=523;right=695;bottom=572;db=1;dl=1;dr=1;transparent=1;z=1};
+static={cls="static";text="IDA基地址(16进制)：";left=128;top=27;right=256;bottom=56;transparent=1;z=5};
+static2={cls="static";text="OD基地址(16进制)：";left=375;top=28;right=596;bottom=57;transparent=1;z=6};
+static3={cls="static";text="IDA函数地址：";left=124;top=117;right=235;bottom=150;transparent=1;z=7};
+static4={cls="static";text="OD函数地址：";left=371;top=112;right=592;bottom=141;transparent=1;z=9}
+)
+/*}}*/
+
+import style; 
+import fsys.table;
+var conf = fsys.table("/addrconf");
+winform.btnCal.skin(style.primaryButton); 
+
+conf["IDABaseAddr"] = conf["IDABaseAddr"] or "401000"
+conf["ODBaseAddr"] = conf["ODBaseAddr"] or "007A0000"
+
+conf["IDAFunAddr"] = conf["IDAFunAddr"] or "sub_4071B0"
+conf["ODFunAddr"] = conf["ODFunAddr"] or "007AB143"
+
+winform.IDABaseAddr.text = conf["IDABaseAddr"]
+winform.ODBaseAddr.text = conf["ODBaseAddr"]
+winform.IDAFunAddr.text = conf["IDAFunAddr"]
+winform.ODFunAddr.text = conf["ODFunAddr"]
+
+conf["hisRecord"] = conf["hisRecord"] or {}
+if conf["hisRecord"] {
+	for _, line in conf["hisRecord"]{
+		winform.hisRecord.appendText(line)
+	}
+}
+
+//var str =  tostring(123,16) //转换为十六进制字符串
+//var num = tonumber(str,16) //将十六进制字符串转换为数值
+
+winform.btnCal.oncommand = function(id,event){
+	var IDABaseAddr = tonumber(winform.IDABaseAddr.text, 16)
+	var ODBaseAddr = tonumber(winform.ODBaseAddr.text, 16)
+	
+	if string.len(winform.IDAFunAddr.text) >= 5{
+		var IDAFunAddr = winform.IDAFunAddr.text
+		IDAFunAddr = string.replace(IDAFunAddr,"sub_","")
+		IDAFunAddr = tonumber(IDAFunAddr, 16)
+		
+		var funOffset = IDAFunAddr - IDABaseAddr
+		var ODFunAddr = ODBaseAddr + funOffset
+		
+		var log = "IDA函数" + winform.IDAFunAddr.text + "偏移: " + tostring(funOffset, 16) + "    对应OD地址：" + tostring(ODFunAddr, 16) + '\r\n'
+		table.insert(conf["hisRecord"], log)
+		winform.hisRecord.appendText(log)
+	}
+	
+	if string.len(winform.ODFunAddr.text) >= 5{
+		var ODFunAddr = tonumber(winform.ODFunAddr.text, 16)
+		var funOffset = ODFunAddr - ODBaseAddr
+		var IDAFunAddr = IDABaseAddr + funOffset
+		
+		var log = "OD函数" + winform.ODFunAddr.text + "偏移: " + tostring(funOffset, 16) + "   对应IDA地址：" + tostring(IDAFunAddr, 16) + '\r\n'
+		table.insert(conf["hisRecord"], log)
+		winform.hisRecord.appendText(log)
+	}
+	
+	conf["IDABaseAddr"] = winform.IDABaseAddr.text
+	conf["IDAFunAddr"]  = winform.IDAFunAddr.text
+	conf["ODBaseAddr"]  = winform.ODBaseAddr.text
+	conf["ODFunAddr"] = winform.ODFunAddr.text
+	
+	conf.save() //函数用于手动保存表到硬盘文件
+}
+
+
+winform.btnClear.oncommand = function(id,event){
+	winform.hisRecord.text = "";
+	conf["hisRecord"] = {}
+}
+
+winform.show();
+win.loopMessage();
+return winform;

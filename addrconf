@@ -1,0 +1,7 @@
+﻿{
+IDABaseAddr="401000";
+IDAFunAddr="sub_4071B0";
+hisRecord={};
+ODFunAddr="007AB143";
+ODBaseAddr="007A0000"
+}
